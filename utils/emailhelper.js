@@ -12,7 +12,7 @@ const mailHelper = async (option) => {
   });
 
   const message = {
-    from: 'subhamsourav175@gmail.com', // sender address
+    from: "subhamsourav175@gmail.com", // sender address
     to: option.email, // list of receivers
     subject: option.subject, // Subject line
     text: option.message, // plain text body
@@ -23,4 +23,4 @@ const mailHelper = async (option) => {
   await transporter.sendMail(message);
 };
 
-module.exports = mailHelper
+module.exports = mailHelper;

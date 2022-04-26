@@ -78,40 +78,42 @@ exports.getOneProduct = BigPromise(async (req, res, next) => {
 });
 
 exports.addReview = BigPromise(async (req, res, next) => {
-  const {rating,comment, productId} = req.body
+  const { rating, comment, productId } = req.body;
 
   const review = {
     user: req.user._id,
     name: req.user.name,
     rating: Number(rating),
-    comment
-  }
+    comment,
+  };
 
-  const product = await Product.findById(productId)
+  const product = await Product.findById(productId);
 
   const AlreadyReview = product.reviews.find(
-    (rev)=> rev.user.toString() === req.user._id.toString()
-  )
+    (rev) => rev.user.toString() === req.user._id.toString()
+  );
 
-  if(AlreadyReview){
-    product.reviews.array.forEach(review => {
-      if(review.user.toString() === req.user._id.toString()){
-        review.comment = comment
-        review.rating = rating
+  if (AlreadyReview) {
+    product.reviews.array.forEach((review) => {
+      if (review.user.toString() === req.user._id.toString()) {
+        review.comment = comment;
+        review.rating = rating;
       }
     });
-  }else{
-    product.reviews.push(review)
-    product.numberofReviews = product.reviews.length
+  } else {
+    product.reviews.push(review);
+    product.numberofReviews = product.reviews.length;
   }
 
   // adjust ratings
 
-  product.rating = product.reviews.reduce((acc,item) => item.rating + acc,0)/product.reviews.length;
+  product.rating =
+    product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+    product.reviews.length;
 
   //save
 
-  await product.save({validateBeforeSave: false})
+  await product.save({ validateBeforeSave: false });
 
   res.status(200).json({
     success: true,
@@ -119,30 +121,36 @@ exports.addReview = BigPromise(async (req, res, next) => {
 });
 
 exports.deleteReview = BigPromise(async (req, res, next) => {
-  const {productId} = req.query
+  const { productId } = req.query;
 
-  const product = await Product.findById(productId)
+  const product = await Product.findById(productId);
 
   const reviews = product.reviews.filter(
-    (rev)=> rev.user.toString() === req.user._id.toString()
-  )
-  const numberofReviews = reviews.length
+    (rev) => rev.user.toString() === req.user._id.toString()
+  );
+  const numberofReviews = reviews.length;
 
   // adjust ratings
 
-  product.rating = product.reviews.reduce((acc,item) => item.rating + acc,0)/product.reviews.length;
+  product.rating =
+    product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+    product.reviews.length;
 
   //update the product
 
-  await Product.findByIdAndUpdate(productId,{
-    reviews,
-    ratings,
-    numberofReviews
-  },{
-    new: true,
-    runValidators: true,
-    useFindAndModify: false
-  })
+  await Product.findByIdAndUpdate(
+    productId,
+    {
+      reviews,
+      ratings,
+      numberofReviews,
+    },
+    {
+      new: true,
+      runValidators: true,
+      useFindAndModify: false,
+    }
+  );
 
   res.status(200).json({
     success: true,
@@ -150,16 +158,14 @@ exports.deleteReview = BigPromise(async (req, res, next) => {
 });
 
 exports.getOnlyReviewsForOneProduct = BigPromise(async (req, res, next) => {
+  const productId = req.query.id;
 
-  const productId = req.query.id
-
-  const product = await Product.findById(productId)
+  const product = await Product.findById(productId);
 
   res.status(200).json({
     success: true,
-    reviews: product.reviews
+    reviews: product.reviews,
   });
-
 });
 
 //admin only controllers
@@ -232,18 +238,16 @@ exports.adminDeleteOneProduct = BigPromise(async (req, res, next) => {
   if (!product) {
     return next(new CustomError("No product found with this id", 401));
   }
-  
+
   for (let index = 0; index < product.photos.length; index++) {
-    const res = await cloudinary.v2.uploader.destroy(
-      product.photos[index].id
-    );
+    const res = await cloudinary.v2.uploader.destroy(product.photos[index].id);
   }
 
-  await product.remove()
+  await product.remove();
 
   res.status(200).json({
     success: true,
-    message: "product was deleted"
+    message: "product was deleted",
   });
 });
 
