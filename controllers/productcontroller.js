@@ -91,7 +91,7 @@ exports.addReview = BigPromise(async (req, res, next) => {
 
   const AlreadyReview = product.reviews.find(
     (rev) => rev.user.toString() === req.user._id.toString()
-  );
+  ); //beacuse its a DSON Object
 
   if (AlreadyReview) {
     product.reviews.array.forEach((review) => {
@@ -172,10 +172,6 @@ exports.getOnlyReviewsForOneProduct = BigPromise(async (req, res, next) => {
 exports.adminGetAllproducts = BigPromise(async (req, res, next) => {
   const products = await Product.find();
 
-  // if(!products){
-
-  // }
-
   res.status(200).json({
     success: true,
     products,
@@ -195,9 +191,7 @@ exports.adminupdateOneProduct = BigPromise(async (req, res, next) => {
     //destroy the existing images
 
     for (let index = 0; index < product.photos.length; index++) {
-      const res = await cloudinary.v2.uploader.destroy(
-        product.photos[index].id
-      );
+      await cloudinary.v2.uploader.destroy(product.photos[index].id);
     }
 
     //upload and save the image

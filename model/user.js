@@ -14,13 +14,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "please provide a email"],
     validate: [validator.isEmail, "please enter email in correct format"],
+    trim: true,
     unique: true,
   },
   password: {
     type: String,
     required: [true, "please provide a password"],
     minlength: [6, "PW should be atleast 6 char"],
-    select: false,
+    select: false, //while bringing pw field will not come, have to explicitly mention
   },
   role: {
     type: String,
@@ -56,7 +57,7 @@ userSchema.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-//valdate the password with passed on user password
+//validate the password with passed on user password
 userSchema.methods.isValidatedPassword = async function (usersendpassword) {
   return await bcrypt.compare(usersendpassword, this.password);
 };
@@ -68,7 +69,7 @@ userSchema.methods.getJwtToken = function () {
   });
 };
 
-//Generte forgot password token (string)
+//Generate forgot password token (string)
 userSchema.methods.getForgetPasswordToken = function () {
   //generate a long and random string
   const forgotToken = crypto.randomBytes(20).toString("hex");

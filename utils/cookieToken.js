@@ -1,4 +1,4 @@
-const cookieToken = (user, res) => {
+const cookieToken = (user, res, message) => {
   const token = user.getJwtToken();
 
   const options = {
@@ -11,7 +11,7 @@ const cookieToken = (user, res) => {
   user.password = undefined;
 
   res.status(200).cookie("token", token, options).json({
-    success: true,
+    message,
     token,
     user,
   });

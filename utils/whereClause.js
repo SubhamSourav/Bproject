@@ -1,4 +1,8 @@
 const { json } = require("express");
+const product = require("../model/product");
+
+// base - product.find()
+// bigQ = bigQuery
 
 class whereClause {
   constructor(base, bigQ) {

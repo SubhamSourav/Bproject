@@ -24,6 +24,7 @@ exports.signup = BigPromise(async (req, res, next) => {
 
   if (!email || !name || !password) {
     return next(new CustomError("Name, email and password are required", 400));
+    // return next(new Error("Name, email and password are required"));
   }
 
   const user = await User.create({
@@ -66,7 +67,7 @@ exports.login = BigPromise(async (req, res, next) => {
   }
 
   //if all goes good we will send the token
-  cookieToken(user, res);
+  cookieToken(user, res, "Successfully logged-In");
 });
 
 exports.logout = BigPromise(async (req, res, next) => {
@@ -146,7 +147,7 @@ exports.passwordReset = BigPromise(async (req, res, next) => {
   await user.save();
 
   //send a JSON response or a token
-  cookieToken(user, res);
+  cookieToken(user, res, "Password Changed Successfully");
 });
 
 exports.getLoggedInUserDetails = BigPromise(async (req, res, next) => {
@@ -178,16 +179,20 @@ exports.changePassword = BigPromise(async (req, res, next) => {
 
 exports.updateUserDetails = BigPromise(async (req, res, next) => {
   //add a check for email and name in body
-  const newData = {
-    name: req.body.name,
-    email: req.body.email,
-  };
+
+  let newData = {};
+
+  if (!req.body.name) newData.name = user.name;
+  else newData.name = req.body.name;
+
+  if (!req.body.email) newData.email = user.email;
+  else newData.email = req.body.email;
 
   if (req.files) {
     const user = await User.findById(req.user.id);
     //delete pic on cloudinary
     const imageid = user.photo.id;
-    const resp = await cloudinary.v2.uploader.destroy(imageid);
+    const response = await cloudinary.v2.uploader.destroy(imageid);
     //uploading new pic
     const result = await cloudinary.v2.uploader.upload(
       req.files.photo.tempFilePath,
@@ -200,7 +205,7 @@ exports.updateUserDetails = BigPromise(async (req, res, next) => {
 
     newData.photo = {
       id: result.public_id,
-      secure_url: result,
+      secure_url: result.secure_url,
     };
   }
 
@@ -210,9 +215,7 @@ exports.updateUserDetails = BigPromise(async (req, res, next) => {
     userFindAndModify: false,
   });
 
-  res.status(200).json({
-    success: true,
-  });
+  cookieToken(user, res);
 });
 
 exports.adminAllUser = BigPromise(async (req, res, next) => {
@@ -238,17 +241,30 @@ exports.admingetOneUser = BigPromise(async (req, res, next) => {
 });
 
 exports.adminupdateOneUserDetails = BigPromise(async (req, res, next) => {
-  const newData = {
-    name: req.body.name,
-    email: req.body.email,
-    role: req.body.role,
-  };
+  const user = await User.findById(req.params.id);
 
-  const user = await User.findByIdAndUpdate(req.params.id, newData, {
-    new: true,
-    runValidators: true,
-    userFindAndModify: false,
-  });
+  // let newData = {};
+
+  if (req.body.name) user.name = req.body.name;
+  if (req.body.email) user.email = req.body.email;
+  if (req.body.role) user.role = req.body.role;
+
+  // if (!req.body.name) newData.name = user.name;
+  // else newData.name = req.body.name;
+
+  // if (!req.body.email) newData.email = user.email;
+  // else newData.email = req.body.email;
+
+  // if (!req.body.role) newData.role = user.role;
+  // else newData.role = req.body.role;
+
+  // const user = await User.findByIdAndUpdate(req.params.id, newData, {
+  //   new: true,
+  //   runValidators: true,
+  //   userFindAndModify: false,
+  // });
+
+  await user.save();
 
   res.status(200).json({
     success: true,
@@ -256,11 +272,13 @@ exports.adminupdateOneUserDetails = BigPromise(async (req, res, next) => {
 });
 
 exports.admindeleteoneuser = BigPromise(async (req, res, next) => {
-  const user = await User.findByIdAndUpdate(req.params.id);
+  const user = await User.findById(req.params.id);
 
   if (!user) {
     return next(new CustomError("No such user found", 401));
   }
+
+  const name = user.name;
 
   const imageid = user.photo.id;
 
@@ -269,11 +287,17 @@ exports.admindeleteoneuser = BigPromise(async (req, res, next) => {
   await user.remove();
   res.status(200).json({
     success: true,
+    message: `${name} is removed`,
   });
 });
 
 exports.managerAllUser = BigPromise(async (req, res, next) => {
   const users = await User.find({ role: "user" });
+
+  users.forEach((user) => {
+    user.role = undefined;
+    user.createdAt = undefined;
+  });
 
   res.status(200).json({
     success: true,

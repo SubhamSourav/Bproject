@@ -20,7 +20,7 @@ router.route("/products").get(getAllproduct);
 router.route("/product/:id").get(getOneProduct);
 router.route("/review").put(isLoggedIn, addReview);
 router.route("/review").delete(isLoggedIn, deleteReview);
-router.route("/reviews").get(getOnlyReviewsForOneProduct);
+router.route("/reviews").get(isLoggedIn, getOnlyReviewsForOneProduct);
 
 //admin route
 router

@@ -32,7 +32,7 @@ exports.createOrder = bigPromise(async (req, res, next) => {
 exports.getOneOrder = bigPromise(async (req, res, next) => {
   const order = await Order.findById(req.params.id).populate(
     "user",
-    "name email"
+    "name email role"
   );
 
   if (!order) {
@@ -100,6 +100,13 @@ exports.admindeleteOrder = bigPromise(async (req, res, next) => {
 async function updateProductStock(productId, quantity) {
   const product = await Product.findById(productId);
 
+  if (product.stock < quantity) {
+    return next(
+      new CustomError(
+        `${quantity} ${product.name} are not available, only ${product.stock} ${product.name} are available`
+      )
+    );
+  }
   product.stock = product.stock - quantity;
 
   await product.save({ validateBeforeSave: false });
