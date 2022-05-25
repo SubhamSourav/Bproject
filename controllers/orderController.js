@@ -4,14 +4,26 @@ const bigPromise = require("../middleware/bigPromise");
 const CustomError = require("../utils/customError");
 
 exports.createOrder = bigPromise(async (req, res, next) => {
-  const {
-    shippingInfo,
-    orderItems,
-    paymentInfo,
-    taxAmount,
-    shippingAmount,
-    totalAmount,
-  } = req.body;
+  const { shippingInfo, orderItems, paymentInfo } = req.body;
+
+  for (let index = 0; index < orderItems.length; index++) {
+    const item = await Product.findById(orderItems[index].product);
+
+    orderItems[index].name = item.name;
+    orderItems[index].image = item.photos[0].secure_url;
+    orderItems[index].price = item.price;
+  }
+
+  const shippingAmount = 200;
+  let totalAmount = shippingAmount;
+  let taxAmount = 0;
+  for (let index = 0; index < orderItems.length; index++) {
+    const item = orderItems[index];
+    let cost = item.quantity * item.price;
+    let tax = cost * 0.1;
+    taxAmount += tax;
+    totalAmount += cost + tax;
+  }
 
   const order = await Order.create({
     shippingInfo,
@@ -74,9 +86,18 @@ exports.adminUpdateOrder = bigPromise(async (req, res, next) => {
     return next(new CustomError("Order is already marked for delivered", 401));
   }
 
+  order.orderItems.forEach(async (prod) => {
+    const product = await Product.findById(prod.product);
+    if (prod.quantity > product.stock) {
+      return res.status(401).json({
+        error: `${prod.quantity} ${product.name} are needed, only ${product.stock} ${product.name} are available`,
+      });
+    }
+  });
+
   order.orderStatus = req.body.orderStatus;
   order.orderItems.forEach(async (prod) => {
-    await updateProductStock(prod.product, prod.quantity);
+    await updateProductStock(prod.product, prod.quantity, next);
   });
 
   await order.save();
@@ -97,17 +118,16 @@ exports.admindeleteOrder = bigPromise(async (req, res, next) => {
   });
 });
 
-async function updateProductStock(productId, quantity) {
+async function updateProductStock(productId, quantity, next) {
   const product = await Product.findById(productId);
 
-  if (product.stock < quantity) {
-    return next(
-      new CustomError(
-        `${quantity} ${product.name} are not available, only ${product.stock} ${product.name} are available`
-      )
-    );
-  }
+  // if (quantity > product.stock) {
+  //   return next(
+  //     new CustomError(
+  //       `${quantity} ${product.name} are needed, only ${product.stock} ${product.name} are available`
+  //     )
+  //   );
+  // }
   product.stock = product.stock - quantity;
-
   await product.save({ validateBeforeSave: false });
 }

@@ -29,6 +29,7 @@ router.route("/userDashBoard").get(isLoggedIn, getLoggedInUserDetails);
 router.route("/password/update").post(isLoggedIn, changePassword);
 router.route("/userDashBoard/update").post(isLoggedIn, updateUserDetails);
 
+//Admin Routes
 router.route("/admin/users").get(isLoggedIn, CustomRole("admin"), adminAllUser);
 router
   .route("/admin/user/:id")

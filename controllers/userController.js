@@ -22,21 +22,35 @@ exports.signup = BigPromise(async (req, res, next) => {
 
   const { name, email, password } = req.body;
 
-  if (!email || !name || !password) {
-    return next(new CustomError("Name, email and password are required", 400));
-    // return next(new Error("Name, email and password are required"));
+  if (!name) {
+    return next(new CustomError("Name is Required", 400));
   }
 
-  const user = await User.create({
-    name,
-    email,
-    password,
-    photo: {
-      id: result.public_id,
-      secure_url: result.secure_url,
-    },
-  });
-  cookieToken(user, res);
+  if (!email) {
+    return next(new CustomError("Email is Required", 400));
+  }
+
+  if (!password) {
+    return next(new CustomError("Password is Required", 400));
+  }
+
+  // return next(new Error("Name, email and password are required"));
+
+  try {
+    const user = await User.create({
+      name,
+      email,
+      password,
+      photo: {
+        id: result.public_id,
+        secure_url: result.secure_url,
+      },
+    });
+    cookieToken(user, res, "User Created");
+  } catch (error) {
+    await cloudinary.v2.uploader.destroy(result.public_id);
+    return next(new CustomError(error.message, 400));
+  }
 });
 
 exports.login = BigPromise(async (req, res, next) => {
@@ -50,7 +64,7 @@ exports.login = BigPromise(async (req, res, next) => {
   //get user from db
   const user = await User.findOne({ email }).select("+password");
 
-  //if user ot found in db
+  //if user not found in db
   if (!user) {
     return next(
       new CustomError("Email or password does not match or exist", 400)
@@ -241,28 +255,17 @@ exports.admingetOneUser = BigPromise(async (req, res, next) => {
 });
 
 exports.adminupdateOneUserDetails = BigPromise(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+  const newData = {
+    name: req.body.name,
+    email: req.body.email,
+    role: req.body.role,
+  };
 
-  // let newData = {};
-
-  if (req.body.name) user.name = req.body.name;
-  if (req.body.email) user.email = req.body.email;
-  if (req.body.role) user.role = req.body.role;
-
-  // if (!req.body.name) newData.name = user.name;
-  // else newData.name = req.body.name;
-
-  // if (!req.body.email) newData.email = user.email;
-  // else newData.email = req.body.email;
-
-  // if (!req.body.role) newData.role = user.role;
-  // else newData.role = req.body.role;
-
-  // const user = await User.findByIdAndUpdate(req.params.id, newData, {
-  //   new: true,
-  //   runValidators: true,
-  //   userFindAndModify: false,
-  // });
+  const user = await User.findByIdAndUpdate(req.params.id, newData, {
+    new: true,
+    runValidators: true,
+    userFindAndModify: false,
+  });
 
   await user.save();
 
@@ -279,7 +282,6 @@ exports.admindeleteoneuser = BigPromise(async (req, res, next) => {
   }
 
   const name = user.name;
-
   const imageid = user.photo.id;
 
   await cloudinary.v2.uploader.destroy(imageid);

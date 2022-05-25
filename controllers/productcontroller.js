@@ -4,7 +4,7 @@ const CustomError = require("../utils/customError");
 const cloudinary = require("cloudinary");
 const product = require("../model/product");
 const whereClause = require("../utils/whereClause");
-const { query } = require("express");
+const uploader = require("../utils/uploader");
 
 exports.addProduct = BigPromise(async (req, res, next) => {
   //images
@@ -14,20 +14,22 @@ exports.addProduct = BigPromise(async (req, res, next) => {
     return next(new CustomError("images are required", 401));
   }
 
+  console.log(req.files.photos.length);
   if (req.files) {
-    // console.log(req.files.photos);
-    for (let index = 0; index < req.files.photos.length; index++) {
-      let result = await cloudinary.v2.uploader.upload(
-        req.files.photos[index].tempFilePath,
-        {
-          folder: "products",
-        }
-      );
-
+    if (req.files.photos.length === undefined) {
+      let result = await uploader(req.files.photos.tempFilePath);
       imageArray.push({
         id: result.public_id,
         secure_url: result.secure_url,
       });
+    } else {
+      for (let index = 0; index < req.files.photos.length; index++) {
+        let result = await uploader(req.files.photos[index].tempFilePath);
+        imageArray.push({
+          id: result.public_id,
+          secure_url: result.secure_url,
+        });
+      }
     }
   }
 
@@ -195,20 +197,22 @@ exports.adminupdateOneProduct = BigPromise(async (req, res, next) => {
     }
 
     //upload and save the image
-
     // console.log(req.files.photos);
-    for (let index = 0; index < req.files.photos.length; index++) {
-      let result = await cloudinary.v2.uploader.upload(
-        req.files.photos[index].tempFilePath,
-        {
-          folder: "products", //folder name -> .env
-        }
-      );
-
+    if (req.files.photos.length === undefined) {
+      let result = await uploader(req.files.photos.tempFilePath);
       imageArray.push({
         id: result.public_id,
         secure_url: result.secure_url,
       });
+    } else {
+      for (let index = 0; index < req.files.photos.length; index++) {
+        let result = await uploader(req.files.photos[index].tempFilePath);
+
+        imageArray.push({
+          id: result.public_id,
+          secure_url: result.secure_url,
+        });
+      }
     }
   }
 
@@ -242,12 +246,5 @@ exports.adminDeleteOneProduct = BigPromise(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: "product was deleted",
-  });
-});
-
-exports.testproduct = BigPromise(async (req, res, next) => {
-  res.status(200).json({
-    success: true,
-    greeting: "Test for product",
   });
 });
