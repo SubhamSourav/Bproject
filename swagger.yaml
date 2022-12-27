@@ -25,7 +25,7 @@ servers:
       url:
         enum:
           - localhost:4000
-          - lcotshirtstore.herokuapp.com
+          - splendid-twill.cyclic.app
         default: localhost:4000
       protocol:
         enum:

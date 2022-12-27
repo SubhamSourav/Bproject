@@ -37,6 +37,10 @@ const product = require("./routes/product");
 const payment = require("./routes/payment");
 const order = require("./routes/order");
 
+app.use("/", (req, res) => {
+  res.send("Welcome to Tshirt Store API");
+});
+
 //router middleware
 app.use("/api/v1", home);
 app.use("/api/v1", user);
